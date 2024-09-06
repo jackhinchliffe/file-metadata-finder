@@ -7,7 +7,7 @@ Script will write this information to a .csv file and save it to the same top-le
 Useful for quickly collecting information throughout folder tree structure for analysis.
 
 ## File Header
-File: File metadata finder.py
+File: File_metadata_finder.py
 
 Author: Jack Hinchliffe
 
