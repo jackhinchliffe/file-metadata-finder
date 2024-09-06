@@ -1,8 +1,8 @@
 """
-File: File metadata finder.py
+File: file_metadata_finder.py
 Author: Jack Hinchliffe
 Date: June 14th 2024
-Version: 1.1
+Version: 1.2
 Python: v3.8.1 (WARNING: Not tested on any other version)
 Dependencies: All libraries should be included in the Python install
 Description: Lightweight script for finding information of all files in a folder structure
@@ -12,6 +12,7 @@ Description: Lightweight script for finding information of all files in a folder
              - Program exits upon finishing writing to file.
              - Data available in csv: Filename, Date Created, Date Modified, File size (bytes), Complete Filepath
 Changelog:
+    1.2 - Bug fix for type annotation and empty directory selection
     1.1 - Added better documentation
     1.0 - Initial development
 """
@@ -22,6 +23,7 @@ from tkinter import filedialog, messagebox
 from pathlib import Path, PureWindowsPath
 from datetime import datetime
 import csv
+from typing import Union
 
 def selectRootDirectory() -> PureWindowsPath:
     """
@@ -34,14 +36,14 @@ def selectRootDirectory() -> PureWindowsPath:
     """
     root = tk.Tk()
     root.withdraw()
-    dir_path = PureWindowsPath(filedialog.askdirectory(title="Select Top-Level Folder"))
+    dir_path = filedialog.askdirectory(title="Select Top-Level Folder")
     
     if not dir_path:
         messagebox.showerror("Error", "No directory selected")
         exit()
-    return dir_path
+    return PureWindowsPath(dir_path)
 
-def getFileMetadata(filepath:str, topDir:PureWindowsPath) -> tuple | None:
+def getFileMetadata(filepath:str, topDir:PureWindowsPath) -> Union[tuple, None]:
     """
     Tries to collect metadata of a single file
         If found, return data
@@ -128,4 +130,3 @@ def main() -> None:
 # Execute main function if script is being ran rather than as a module
 if __name__ == "__main__":
     main()
-    
