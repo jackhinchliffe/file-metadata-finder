@@ -1,17 +1,25 @@
 """
 File: file_metadata_finder.py
+
 Author: Jack Hinchliffe
+
 Date: June 14th 2024
-Version: 1.2
+
+Version: 1.3
+
 Python: v3.8.1 (WARNING: Not tested on any other version)
+
 Dependencies: All libraries should be included in the Python install
+
 Description: Lightweight script for finding information of all files in a folder structure
              - Launches a GUI window for user to select a folder. 
              - Using this folder as a top-level, search all folders and collect file metadata for all items found.
              - Creates a .csv file and writes the collected data to it. File given a unique name and saved to the same folder the user selected
              - Program exits upon finishing writing to file.
              - Data available in csv: Filename, Date Created, Date Modified, File size (bytes), Complete Filepath
+
 Changelog:
+    1.3 - Refactored functions to use script as module, added scanFolders() and genFileName()
     1.2 - Bug fix for type annotation and empty directory selection
     1.1 - Added better documentation
     1.0 - Initial development
@@ -23,7 +31,7 @@ from tkinter import filedialog, messagebox
 from pathlib import Path, PureWindowsPath
 from datetime import datetime
 import csv
-from typing import Union
+from typing import Union, List, Tuple
 
 def selectRootDirectory() -> PureWindowsPath:
     """
@@ -40,10 +48,14 @@ def selectRootDirectory() -> PureWindowsPath:
     
     if not dir_path:
         messagebox.showerror("Error", "No directory selected")
-        exit()
+        # If this script is being ran, exit program. If module, return None value
+        if __name__ == '__main__':
+            exit()
+        else:
+            return None
     return PureWindowsPath(dir_path)
 
-def getFileMetadata(filepath:str, topDir:PureWindowsPath) -> Union[tuple, None]:
+def getFileMetadata(filepath:str, topDir:PureWindowsPath) -> Union[Tuple[str, str, str, str, str], None]:
     """
     Tries to collect metadata of a single file
         If found, return data
@@ -96,18 +108,21 @@ def writeToCSV(outputFile:str, data:list) -> None:
 
     print(f'File Data saved to {outputFile}')
 
-def main() -> None:
+def scanFolders(top_level_dir:PureWindowsPath) -> List[List[str]]:
     """
-    Main function, calls the other functions.
-        Starts by asking for top directory 
-        Loops through the folders and files to get meta data
-        Ends by writing using the writeToCsv function to create a file with the data
+    Walks through all folders and files that are in the top_level_dir folder tree
 
+    Creates and returns a complete list of file data
+
+    Parameters
+    ---------
+    top_level_dir : PureWindowsPath
+        Windows path of starting directory
+    
     Returns
     ------
-    None : Void function
+    List : 2D List of file meta data for all files found
     """
-    top_level_dir = selectRootDirectory() # prompt user for starting directory
     print(f"Beginning Search from {top_level_dir}")
     files_metadata = [] 
 
@@ -123,9 +138,38 @@ def main() -> None:
             if metadata: # If it was able to find data, add it to the data list
                 files_metadata.append(metadata)
         print(f'Done searching folder: {root}')
+    return files_metadata
+
+def genFileName(top_level_dir:PureWindowsPath) -> str:
+    """
+    Retuns a unique file name and path
+
+    Parameters
+    ---------
+    top_level_dir : PureWindowsPath
+        Windows path of starting directory
     
-    outputFile = f"{top_level_dir}\\file_metadata_{datetime.now().strftime('%Y%m%d-%H%M%S')}.csv" #Create a csv at top level containing results
-    writeToCSV(outputFile, files_metadata)
+    Returns
+    ------
+    str : file name in top level directory
+    """
+    return f"{top_level_dir}\\file_metadata_{datetime.now().strftime('%Y%m%d-%H%M%S')}.csv" #Create a csv at top level containing results
+
+def main() -> None:
+    """
+    Main function, calls the other functions.
+        Starts by asking for top directory 
+        Loops through the folders and files to get meta data
+        Ends by writing using the writeToCsv function to create a file with the data
+
+    Returns
+    ------
+    None : Void function
+    """
+    top_level_dir = selectRootDirectory() # prompt user for starting directory
+    files_metadata = scanFolders(top_level_dir) # iterate through folders and files
+    outputFile = genFileName(top_level_dir) # create an ouput file path
+    writeToCSV(outputFile, files_metadata) # write an output file
 
 # Execute main function if script is being ran rather than as a module
 if __name__ == "__main__":
