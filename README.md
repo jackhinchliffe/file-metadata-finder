@@ -28,7 +28,9 @@ Use the command line to execute the script using the command `python \Replace\wi
 > Use the `user_interface.py` script with pyinstaller to build an .exe, and use `--onefile` parameter to build both scripts into a single .exe file.
 > The result is a self-contained user-friendly application 
 
-###
+### Dependencies
+- Python: v3.8.1 (WARNING: Not tested on any other version)
+- pywin32 (version 306)
 
 
 ## Module Header: File_metadata_finder
@@ -38,11 +40,13 @@ Author: Jack Hinchliffe
 
 Date: June 14th 2024
 
-Version: 1.3
+Version: 1.4
 
 Python: v3.8.1 (WARNING: Not tested on any other version)
 
-Dependencies: All libraries should be included in the Python install
+Dependencies: 
+- pywin32 (version 306)
+- All libraries should be included in the Python install
 
 Description: 
 Lightweight script for finding information of all files in a folder structure
@@ -50,9 +54,10 @@ Lightweight script for finding information of all files in a folder structure
 - Using this folder as a top-level, search all folders and collect file metadata for all items found.
 - Creates a .csv file and writes the collected data to it. File given a unique name and saved to the same folder the user selected
 - Program exits upon finishing writing to file.
-- Data available in csv: Filename, Date Created, Date Modified, File size (bytes), Complete Filepath
+- Data available in csv: Filename, Date Created, Date Modified, Date Last Accessed, File size (bytes), File Owner, Complete Filepath
 
 Changelog:
+ + 1.4 - Added date last accessed and File Owner to collected data. Requires pywin32 now
  + 1.3 - Refactored functions to use script as module, added scanFolders() and genFileName()
  + 1.2 - Bug fix for type annotation and empty directory selection
  + 1.1 - Added better documentation

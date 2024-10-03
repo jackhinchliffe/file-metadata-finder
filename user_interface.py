@@ -29,7 +29,7 @@ class FileMetadataFinder(tk.Tk):
         container.grid_rowconfigure(0, weight=1)
         container.grid_columnconfigure(0, weight=1)
 
-        self.title("File Metadata Finder")
+        self.title("File Metadata Finder Tool")
         self.geometry('400x200')
 
         self.frames = {}
