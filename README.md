@@ -29,8 +29,8 @@ Use the command line to execute the script using the command `python \Replace\wi
 > The result is a self-contained user-friendly application 
 
 ### Dependencies
-- Python: v3.8.1 (WARNING: Not tested on any other version)
-- pywin32 (version 306)
+- Python: v3.8.1 (minimum)
+- pywin32
 
 
 ## Module Header: File_metadata_finder
@@ -40,12 +40,12 @@ Author: Jack Hinchliffe
 
 Date: June 14th 2024
 
-Version: 1.4
+Version: 1.5
 
-Python: v3.8.1 (WARNING: Not tested on any other version)
+Python: v3.8.1 (minimum)
 
 Dependencies: 
-- pywin32 (version 306)
+- pywin32
 - All libraries should be included in the Python install
 
 Description: 
@@ -57,6 +57,7 @@ Lightweight script for finding information of all files in a folder structure
 - Data available in csv: Filename, Date Created, Date Modified, Date Last Accessed, File size (bytes), File Owner, Complete Filepath
 
 Changelog:
+ + 1.5 - added permission error handling when creating data file in protected directory
  + 1.4 - Added date last accessed and File Owner to collected data. Requires pywin32 now
  + 1.3 - Refactored functions to use script as module, added scanFolders() and genFileName()
  + 1.2 - Bug fix for type annotation and empty directory selection

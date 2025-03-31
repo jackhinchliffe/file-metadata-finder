@@ -5,22 +5,23 @@ Author: Jack Hinchliffe
 
 Date: June 14th 2024
 
-Version: 1.4
+Version: 1.5
 
-Python: v3.8.1 (WARNING: Not tested on any other version)
+Python: v3.8.1 (minimum)
 
-Dependencies: 
-             - pywin32 (version 306)
+Dependencies:
+             - pywin32
              - All other libraries should be included in the Python install
 
 Description: Lightweight script for finding information of all files in a folder structure
-             - Launches a GUI window for user to select a folder. 
+             - Launches a GUI window for user to select a folder.
              - Using this folder as a top-level, search all folders and collect file metadata for all items found.
              - Creates a .csv file and writes the collected data to it. File given a unique name and saved to the same folder the user selected
              - Program exits upon finishing writing to file.
              - Data available in csv: Filename, Date Created, Date Modified, Date Last Accessed, File size (bytes), File Owner, Complete Filepath
 
 Changelog:
+    1.5 - added permission error handling when creating data file in protected directory
     1.4 - Added date last accessed and File Owner to collected data. Requires pywin32 now
     1.3 - Refactored functions to use script as module, added scanFolders() and genFileName()
     1.2 - Bug fix for type annotation and empty directory selection
@@ -35,8 +36,9 @@ from pathlib import Path, PureWindowsPath
 from datetime import datetime
 import csv
 from typing import Union, List, Tuple
-import pywintypes # While unused, this must be imported before win32security otherwise win32security will not correctly import when building an exe with pyinstaller
+import pywintypes  # While unused, this must be imported before win32security otherwise win32security will not correctly import when building an exe with pyinstaller
 import win32security
+
 
 def selectRootDirectory() -> PureWindowsPath:
     """
@@ -50,20 +52,21 @@ def selectRootDirectory() -> PureWindowsPath:
     root = tk.Tk()
     root.withdraw()
     dir_path = filedialog.askdirectory(title="Select Top-Level Folder")
-    
+
     if not dir_path:
         messagebox.showerror("Error", "No directory selected")
         # If this script is being ran, exit program. If module, return None value
-        if __name__ == '__main__':
+        if __name__ == "__main__":
             exit()
         else:
             return None
     return PureWindowsPath(dir_path)
 
-def getFileOwnerUsername(filepath:str) -> str:
+
+def getFileOwnerUsername(filepath: str) -> str:
     """
     Tries to get the username of a file owner.
-    
+
     Parameters
     ---------
     filepath : str
@@ -79,12 +82,13 @@ def getFileOwnerUsername(filepath:str) -> str:
         sd = win32security.GetFileSecurity(filepath, win32security.OWNER_SECURITY_INFORMATION)
         owner_sid = sd.GetSecurityDescriptorOwner()
         name, domain, u_type = win32security.LookupAccountSid(None, owner_sid)
-        return f'{domain}\\{name}'
+        return f"{domain}\\{name}"
     except Exception as e:
-        print(f'Could not determine file owner for {filepath}')
-        return ''
+        print(f"Could not determine file owner for {filepath}")
+        return ""
 
-def getFileMetadata(filepath:str, topDir:PureWindowsPath) -> Union[Tuple[str, str, str, str, str, str], None]:
+
+def getFileMetadata(filepath: str, topDir: PureWindowsPath) -> Union[Tuple[str, str, str, str, str, str], None]:
     """
     Tries to collect metadata of a single file
         If found, return data
@@ -104,19 +108,32 @@ def getFileMetadata(filepath:str, topDir:PureWindowsPath) -> Union[Tuple[str, st
     - None : Returns none if an error occured
     """
     try:
-        long_path = "\\\\?\\"+filepath
-        stats = os.stat(long_path) # Using \\?\ prefix to allow getting stats of files with paths exceeding Window's 256 char limit.
-        createdOn = datetime.fromtimestamp(stats.st_ctime).strftime('%Y-%m-%d %H:%M:%S')
-        modifiedOn = datetime.fromtimestamp(stats.st_mtime).strftime('%Y-%m-%d %H:%M:%S')
-        accessedOn = datetime.fromtimestamp(stats.st_atime).strftime('%Y-%m-%d %H:%M:%S')
-        size = stats.st_size # file size in bytes
+        long_path = "\\\\?\\" + filepath
+        stats = os.stat(
+            long_path
+        )  # Using \\?\ prefix to allow getting stats of files with paths exceeding Window's 256 char limit.
+        createdOn = datetime.fromtimestamp(stats.st_ctime).strftime("%Y-%m-%d %H:%M:%S")
+        modifiedOn = datetime.fromtimestamp(stats.st_mtime).strftime("%Y-%m-%d %H:%M:%S")
+        accessedOn = datetime.fromtimestamp(stats.st_atime).strftime("%Y-%m-%d %H:%M:%S")
+        size = stats.st_size  # file size in bytes
         username = getFileOwnerUsername(long_path)
-        return os.path.basename(filepath), createdOn, modifiedOn, accessedOn, size, username, "\\" + os.path.relpath(filepath, topDir) # return stats
-    except Exception as e: # If there was a reason that the prior file data couldn't be found, notify in terminal and skip
-        print(f'Error getting metadata for {filepath}: {e}')
+        return (
+            os.path.basename(filepath),
+            createdOn,
+            modifiedOn,
+            accessedOn,
+            size,
+            username,
+            "\\" + os.path.relpath(filepath, topDir),
+        )  # return stats
+    except (
+        Exception
+    ) as e:  # If there was a reason that the prior file data couldn't be found, notify in terminal and skip
+        print(f"Error getting metadata for {filepath}: {e}")
         return None
 
-def writeToCSV(outputFile:str, data:list) -> None:
+
+def writeToCSV(outputFile: str, data: list) -> None:
     """
     Takes data and writes it to csv file specified by outputFile
 
@@ -133,14 +150,34 @@ def writeToCSV(outputFile:str, data:list) -> None:
     ------
     None : Void function
     """
-    with open(outputFile, mode='w', newline='', encoding='utf-8') as file:
-        writer = csv.writer(file)
-        writer.writerow(["Filename", "Created On", "Modifed On", "Last Accessed On", "File Size (bytes)", "File Owner", "File Path"]) # Add header row to csv file
-        writer.writerows(data) # Write rest of data after
+    try:
+        with open(outputFile, mode="w", newline="", encoding="utf-8") as file:
+            writer = csv.writer(file)
+            writer.writerow(
+                [
+                    "Filename",
+                    "Created On",
+                    "Modifed On",
+                    "Last Accessed On",
+                    "File Size (bytes)",
+                    "File Owner",
+                    "File Path",
+                ]
+            )  # Add header row to csv file
+            writer.writerows(data)  # Write rest of data after
 
-    print(f'File Data saved to {outputFile}')
+        print(f"File Data saved to {outputFile}")
+    except Exception as e:
+        print(f"\n** Saving data to file FAILED **\nData Was Not Saved!")
+        if e == PermissionError:
+            print(f"You do not have the permission to create the file {outputFile} in the selected directory")
+            print("Find another folder to save data to.")
+        else:
+            print(e)
+        print("\n Please resolve the above error and rerun the script.")
 
-def scanFolders(top_level_dir:PureWindowsPath) -> List[List[str]]:
+
+def scanFolders(top_level_dir: PureWindowsPath) -> List[List[str]]:
     """
     Walks through all folders and files that are in the top_level_dir folder tree
 
@@ -150,29 +187,33 @@ def scanFolders(top_level_dir:PureWindowsPath) -> List[List[str]]:
     ---------
     top_level_dir : PureWindowsPath
         Windows path of starting directory
-    
+
     Returns
     ------
     List : 2D List of file meta data for all files found
     """
     print(f"Beginning Search from {top_level_dir}")
-    files_metadata = [] 
+    files_metadata = []
 
-    skipExtensions = ['.lnk', '.url'] # file extensions that should skipped during walk (to avoid going into another directory)
+    skipExtensions = [
+        ".lnk",
+        ".url",
+    ]  # file extensions that should skipped during walk (to avoid going into another directory)
 
-    for root, dirs, files in os.walk(top_level_dir): # Iterate through the folders
-        print(f'Searching folder: {root}')
-        for file in files: # Iterate through files in the current folder
-            if any(file.lower().endswith(ext) for ext in skipExtensions): # skip over unwanted files
+    for root, dirs, files in os.walk(top_level_dir):  # Iterate through the folders
+        print(f"Searching folder: {root}")
+        for file in files:  # Iterate through files in the current folder
+            if any(file.lower().endswith(ext) for ext in skipExtensions):  # skip over unwanted files
                 continue
-            filepath = os.path.join(top_level_dir,root, file) # Get a full filepath for the file
-            metadata = getFileMetadata(filepath, top_level_dir) # Get the file's metadata
-            if metadata: # If it was able to find data, add it to the data list
+            filepath = os.path.join(top_level_dir, root, file)  # Get a full filepath for the file
+            metadata = getFileMetadata(filepath, top_level_dir)  # Get the file's metadata
+            if metadata:  # If it was able to find data, add it to the data list
                 files_metadata.append(metadata)
-        print(f'Done searching folder: {root}')
+        print(f"Done searching folder: {root}")
     return files_metadata
 
-def genFileName(top_level_dir:PureWindowsPath) -> str:
+
+def genFileName(top_level_dir: PureWindowsPath) -> str:
     """
     Retuns a unique file name and path
 
@@ -180,17 +221,18 @@ def genFileName(top_level_dir:PureWindowsPath) -> str:
     ---------
     top_level_dir : PureWindowsPath
         Windows path of starting directory
-    
+
     Returns
     ------
     str : file name in top level directory
     """
-    return f"{top_level_dir}\\file_metadata_{datetime.now().strftime('%Y%m%d-%H%M%S')}.csv" #Create a csv at top level containing results
+    return f"{top_level_dir}\\file_metadata_{datetime.now().strftime('%Y%m%d-%H%M%S')}.csv"  # Create a csv at top level containing results
+
 
 def main() -> None:
     """
     Main function, calls the other functions.
-        Starts by asking for top directory 
+        Starts by asking for top directory
         Loops through the folders and files to get meta data
         Ends by writing using the writeToCsv function to create a file with the data
 
@@ -198,10 +240,11 @@ def main() -> None:
     ------
     None : Void function
     """
-    top_level_dir = selectRootDirectory() # prompt user for starting directory
-    files_metadata = scanFolders(top_level_dir) # iterate through folders and files
-    outputFile = genFileName(top_level_dir) # create an ouput file path
-    writeToCSV(outputFile, files_metadata) # write an output file
+    top_level_dir = selectRootDirectory()  # prompt user for starting directory
+    files_metadata = scanFolders(top_level_dir)  # iterate through folders and files
+    outputFile = genFileName(top_level_dir)  # create an ouput file path
+    writeToCSV(outputFile, files_metadata)  # write an output file
+
 
 # Execute main function if script is being ran rather than as a module
 if __name__ == "__main__":
